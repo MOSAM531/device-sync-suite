@@ -2,8 +2,11 @@ name: Build Both APKs (App 1 & App 2)
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch: # Allows manual 1-click trigger from GitHub website
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-apks:
@@ -19,16 +22,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
+
+      - name: Accept Android Licenses
+        run: |
+          yes | sdkmanager --licenses || true
 
       # Build App 1 (Admin Controller APK)
       - name: Build App 1 (Admin) APK
         working-directory: ./app1_admin
         run: |
-          gradle wrapper --gradle-version 8.6
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          gradle assembleDebug --stacktrace
           mkdir -p ../output_apks
           cp app/build/outputs/apk/debug/app-debug.apk ../output_apks/App1_Admin_Controller.apk
 
@@ -36,15 +43,27 @@ jobs:
       - name: Build App 2 (Client) APK
         working-directory: ./app2_client
         run: |
-          gradle wrapper --gradle-version 8.6
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          gradle assembleDebug --stacktrace
           cp app/build/outputs/apk/debug/app-debug.apk ../output_apks/App2_Target_Client.apk
 
-      # Upload both APK files so user can download them directly
+      # Upload both APK files so user can download them as Artifacts
       - name: Upload APKs as Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Device-Sync-APKs
           path: output_apks/*.apk
           retention-days: 30
+
+      # Publish directly to Releases for direct 1-tap phone download links
+      - name: Publish to GitHub Releases
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk-build
+          name: "Latest Android APKs (App 1 & App 2)"
+          body: "Direct download links for App 1 (Admin Controller) and App 2 (Target Client)."
+          draft: false
+          prerelease: false
+          files: output_apks/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
