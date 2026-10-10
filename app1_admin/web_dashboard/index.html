@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Device Controller | App 1</title>
+  <!-- Tailwind CSS & Lucide Icons CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-dot {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-4 py-3 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Admin Master Controller
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">APP 1</span>
+          </h1>
+          <p class="text-xs text-slate-400">Real-time target device tracking &amp; remote controls</p>
+        </div>
+      </div>
+
+      <!-- Database Config & Status -->
+      <div class="flex items-center space-x-3 text-xs">
+        <button onclick="openConfigModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">
+          <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <span id="cfgDbShortName">Configure Firebase</span>
+        </button>
+        <span id="connectionBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Syncing
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto p-4 md:p-6 flex-1 w-full space-y-6">
+
+    <!-- Overview Stats Bar -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-sm">
+        <span class="text-xs font-medium text-slate-400">Total Devices</span>
+        <div class="text-2xl font-bold text-white mt-1" id="statTotalDevices">0</div>
+      </div>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-sm">
+        <span class="text-xs font-medium text-emerald-400">Online Now</span>
+        <div class="text-2xl font-bold text-emerald-400 mt-1" id="statOnlineDevices">0</div>
+      </div>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-sm">
+        <span class="text-xs font-medium text-amber-400">GPS Active</span>
+        <div class="text-2xl font-bold text-amber-400 mt-1" id="statGpsDevices">0</div>
+      </div>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-sm">
+        <span class="text-xs font-medium text-slate-400">Last Database Ping</span>
+        <div class="text-sm font-semibold text-slate-300 mt-2 truncate" id="statLastPing">Checking...</div>
+      </div>
+    </section>
+
+    <!-- Connected Devices Section -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+          <span>Active Connected Devices (App 2)</span>
+          <span id="deviceCountBadge" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400 border border-slate-700">0</span>
+        </h2>
+        <button onclick="fetchDevicesData()" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          Refresh Now
+        </button>
+      </div>
+
+      <!-- Device Cards Container -->
+      <div id="devicesContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Placeholder / Loading State -->
+        <div class="col-span-full bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
+          <svg class="w-10 h-10 mx-auto mb-3 text-slate-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          <p class="text-sm font-medium text-slate-400">Waiting for devices to report...</p>
+          <p class="text-xs mt-1">Make sure App 2 is running on target phones with the same Firebase URL.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Global Live Map View -->
+    <section class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+          <h3 class="font-semibold text-sm text-slate-200">Global Device Location Map</h3>
+        </div>
+        <span class="text-xs text-slate-400">Live GPS Markers</span>
+      </div>
+      <div id="mainMap" class="w-full h-80 rounded-xl overflow-hidden border border-slate-800 z-10 bg-slate-950"></div>
+    </section>
+
+  </main>
+
+  <!-- Send Alert Modal -->
+  <div id="alertModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        Send Urgent Pop-up Alert
+      </h3>
+      <p class="text-xs text-slate-400">This message will immediately appear as a high-priority notification with loud sound on the target device.</p>
+      <input type="hidden" id="targetDeviceId">
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Alert Message:</label>
+        <textarea id="alertMessageText" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500" placeholder="e.g. Please call me back right now! Important update."></textarea>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button onclick="closeAlertModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button onclick="submitAlertMessage()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition">Send Urgent Alert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Config Modal -->
+  <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+        Configure Firebase Realtime Database
+      </h3>
+      <p class="text-xs text-slate-400">Enter your Firebase Realtime Database URL. Both App 1 and App 2 will use this URL to sync in real-time.</p>
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Database URL:</label>
+        <input type="text" id="configDatabaseUrl" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500" placeholder="https://your-project-id-default-rtdb.firebaseio.com">
+      </div>
+      <div class="bg-blue-950/40 border border-blue-800/40 rounded-xl p-3 text-xs text-blue-300 space-y-1">
+        <p class="font-semibold">💡 Firebase Quick Tip:</p>
+        <p>1. Go to <a href="https://console.firebase.google.com" target="_blank" class="underline text-blue-200">Firebase Console</a> &gt; Create free project.</p>
+        <p>2. Click <b>Realtime Database</b> &gt; Create Database &gt; Start in <b>Test Mode</b> (read: true, write: true).</p>
+        <p>3. Copy the URL at the top and paste it here.</p>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button onclick="closeConfigModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">Cancel</button>
+        <button onclick="saveConfigModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let dbUrl = localStorage.getItem('devicesync_firebase_url') || 'https://devicesync-default-rtdb.firebaseio.com';
+    let mapInstance = null;
+    let mapMarkers = {};
+    let activeDevices = {};
+
+    function init() {
+      if (dbUrl.endsWith('/')) dbUrl = dbUrl.slice(0, -1);
+      updateDbLabel();
+      initMap();
+      fetchDevicesData();
+      setInterval(fetchDevicesData, 5000); // Poll every 5 seconds
+    }
+
+    function updateDbLabel() {
+      try {
+        const u = new URL(dbUrl);
+        document.getElementById('cfgDbShortName').textContent = u.hostname.split('.')[0];
+      } catch(e) {
+        document.getElementById('cfgDbShortName').textContent = 'Custom DB';
+      }
+    }
+
+    function initMap() {
+      mapInstance = L.map('mainMap').setView([20.5937, 78.9629], 5); // India center default
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(mapInstance);
+    }
+
+    async function fetchDevicesData() {
+      try {
+        const res = await fetch(`${dbUrl}/devices.json`);
+        document.getElementById('statLastPing').textContent = new Date().toLocaleTimeString();
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        renderDevices(data || {});
+      } catch (err) {
+        console.error('Fetch error:', err);
+        document.getElementById('connectionBadge').className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-medium';
+        document.getElementById('connectionBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400"></span> Disconnected';
+      }
+    }
+
+    function renderDevices(devices) {
+      document.getElementById('connectionBadge').className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium';
+      document.getElementById('connectionBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Syncing';
+
+      activeDevices = devices;
+      const deviceKeys = Object.keys(devices);
+      document.getElementById('statTotalDevices').textContent = deviceKeys.length;
+      document.getElementById('deviceCountBadge').textContent = deviceKeys.length;
+
+      let onlineCount = 0;
+      let gpsCount = 0;
+      const container = document.getElementById('devicesContainer');
+
+      if (deviceKeys.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-12 text-center text-slate-500">
+            <svg class="w-10 h-10 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <p class="text-sm font-medium text-slate-300">No Target Devices Registered Yet</p>
+            <p class="text-xs mt-1 text-slate-500">Open App 2 on any target phone and start the sync service.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      const now = Date.now();
+
+      deviceKeys.forEach(id => {
+        const d = devices[id] || {};
+        const info = d.info || {};
+        const status = d.status || {};
+        const location = d.location || null;
+        const commands = d.commands || {};
+
+        const isOnline = status.lastSeen && (now - status.lastSeen < 45000); // Active within 45 sec
+        if (isOnline) onlineCount++;
+        if (location && location.latitude) gpsCount++;
+
+        const battery = status.battery !== undefined ? status.battery : '--';
+        const isCharging = status.isCharging || false;
+        const batteryColor = battery > 50 ? 'bg-emerald-500' : battery > 20 ? 'bg-amber-500' : 'bg-rose-500';
+
+        const lastSeenText = status.lastSeen ? new Date(status.lastSeen).toLocaleTimeString() : 'Never';
+        const isRinging = commands.ring === true;
+
+        // Update Map Marker
+        if (location && location.latitude && location.longitude) {
+          updateMapMarker(id, info.model || id, location.latitude, location.longitude);
+        }
+
+        html += `
+          <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-5 shadow-lg space-y-4 hover:border-slate-700/80 transition">
+            <!-- Card Header -->
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-bold text-white text-base">${info.brand ? info.brand + ' ' : ''}${info.model || id}</h3>
+                  ${isOnline ? 
+                    '<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE</span>' : 
+                    '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">OFFLINE</span>'
+                  }
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">ID: <code class="text-blue-400 font-mono">${id}</code> • OS: ${info.androidVersion || 'Android'}</div>
+              </div>
+              <span class="text-[11px] text-slate-400 bg-slate-800/60 px-2 py-1 rounded-lg">Last Sync: ${lastSeenText}</span>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-3 gap-2.5 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+              <div>
+                <span class="text-slate-400 block text-[11px]">Battery</span>
+                <div class="font-bold text-white flex items-center gap-1.5 mt-0.5">
+                  <div class="w-12 bg-slate-800 h-2 rounded-full overflow-hidden inline-block">
+                    <div class="${batteryColor} h-full" style="width: ${battery}%"></div>
+                  </div>
+                  <span>${battery}% ${isCharging ? '⚡' : ''}</span>
+                </div>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[11px]">Network</span>
+                <span class="font-semibold text-slate-200 mt-0.5 block">${status.network || 'Unknown'}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[11px]">Storage Free</span>
+                <span class="font-semibold text-slate-200 mt-0.5 block">${status.storageFree || '--'} / ${status.storageTotal || '--'}</span>
+              </div>
+            </div>
+
+            <!-- Location Section -->
+            <div class="bg-slate-950/40 p-3 rounded-xl border border-slate-800/40 text-xs flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="text-slate-400 block text-[11px] flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                  GPS Coordinates
+                </span>
+                ${location && location.latitude ? 
+                  `<div class="font-mono text-slate-300 font-semibold mt-0.5">${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} <span class="text-[10px] text-slate-500 font-sans">(±${Math.round(location.accuracy || 0)}m)</span></div>` : 
+                  '<div class="text-slate-500 italic mt-0.5">Location not reported yet</div>'
+                }
+              </div>
+              ${location && location.latitude ? `
+                <a href="https://www.google.com/maps?q=${location.latitude},${location.longitude}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 font-medium transition flex items-center gap-1">
+                  <span>Open in Maps</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+              ` : ''}
+            </div>
+
+            <!-- Remote Controls Deck -->
+            <div class="pt-1">
+              <span class="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-2">Remote Actions:</span>
+              <div class="grid grid-cols-3 gap-2">
+                <!-- Ring Siren Button -->
+                <button onclick="toggleRingSiren('${id}', ${!isRinging})" class="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition ${isRinging ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
+                  <span>🚨</span>
+                  <span>${isRinging ? 'Stop Alarm' : 'Ring Siren'}</span>
+                </button>
+
+                <!-- Send Alert Message -->
+                <button onclick="openAlertModal('${id}')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-1.5 transition">
+                  <span>📢</span>
+                  <span>Send Alert</span>
+                </button>
+
+                <!-- Force Sync GPS -->
+                <button onclick="forceSyncDevice('${id}')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-1.5 transition">
+                  <span>🔄</span>
+                  <span>Sync Now</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      document.getElementById('statOnlineDevices').textContent = onlineCount;
+      document.getElementById('statGpsDevices').textContent = gpsCount;
+    }
+
+    function updateMapMarker(id, title, lat, lng) {
+      if (!mapInstance) return;
+      if (mapMarkers[id]) {
+        mapMarkers[id].setLatLng([lat, lng]);
+      } else {
+        const marker = L.marker([lat, lng]).addTo(mapInstance);
+        marker.bindPopup(`<b>${title}</b><br>Lat: ${lat.toFixed(5)}<br>Lng: ${lng.toFixed(5)}`);
+        mapMarkers[id] = marker;
+        mapInstance.panTo([lat, lng]);
+      }
+    }
+
+    async function toggleRingSiren(id, state) {
+      try {
+        await fetch(`${dbUrl}/devices/${id}/commands/ring.json`, {
+          method: 'PUT',
+          body: JSON.stringify(state)
+        });
+        fetchDevicesData();
+      } catch(e) {
+        alert('Error sending siren command: ' + e.message);
+      }
+    }
+
+    async function forceSyncDevice(id) {
+      try {
+        await fetch(`${dbUrl}/devices/${id}/commands/forceSync.json`, {
+          method: 'PUT',
+          body: JSON.stringify(true)
+        });
+        alert('Force sync command sent to ' + id);
+      } catch(e) {
+        alert('Error sending sync command: ' + e.message);
+      }
+    }
+
+    function openAlertModal(id) {
+      document.getElementById('targetDeviceId').value = id;
+      document.getElementById('alertMessageText').value = '';
+      document.getElementById('alertModal').classList.remove('hidden');
+      document.getElementById('alertModal').classList.add('flex');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.add('hidden');
+      document.getElementById('alertModal').classList.remove('flex');
+    }
+
+    async function submitAlertMessage() {
+      const id = document.getElementById('targetDeviceId').value;
+      const text = document.getElementById('alertMessageText').value.trim();
+      if (!text) return alert('Please enter message text');
+
+      try {
+        await fetch(`${dbUrl}/devices/${id}/commands/alertMessage.json`, {
+          method: 'PUT',
+          body: JSON.stringify(text)
+        });
+        closeAlertModal();
+        alert('Alert message sent successfully to ' + id);
+      } catch(e) {
+        alert('Error sending message: ' + e.message);
+      }
+    }
+
+    function openConfigModal() {
+      document.getElementById('configDatabaseUrl').value = dbUrl;
+      document.getElementById('configModal').classList.remove('hidden');
+      document.getElementById('configModal').classList.add('flex');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+      document.getElementById('configModal').classList.remove('flex');
+    }
+
+    function saveConfigModal() {
+      let url = document.getElementById('configDatabaseUrl').value.trim();
+      if (!url) return alert('Please enter Firebase URL');
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      dbUrl = url;
+      localStorage.setItem('devicesync_firebase_url', dbUrl);
+      closeConfigModal();
+      updateDbLabel();
+      fetchDevicesData();
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

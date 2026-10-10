@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121824"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Device Sync Agent"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Client Application (Target Device)"
+            android:textColor="#90A4AE"
+            android:textSize="14sp" />
+
+        <!-- Status Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="#1E293B"
+            android:elevation="4dp"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● SYNC STATUS: INITIALIZING"
+                android:textColor="#00E676"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="This device synchronizes GPS location, battery levels, and device health to your Admin controller app in real-time."
+                android:textColor="#CFD8DC"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Configuration Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#1E293B"
+            android:elevation="4dp"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Device Configuration"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Device Identifier (ID for Admin):"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etDeviceId"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="#0F172A"
+                android:hint="e.g. phone_target_01"
+                android:padding="10dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Firebase Realtime Database URL:"
+                android:textColor="#B0BEC5"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/etFirebaseUrl"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="#0F172A"
+                android:hint="https://your-project.firebaseio.com"
+                android:padding="10dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnSaveConfig"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#3B82F6"
+                android:text="Save &amp; Connect"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Actions -->
+        <Button
+            android:id="@+id/btnToggleService"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="#10B981"
+            android:text="Start Background Service"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnBatteryOptimization"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#475569"
+            android:text="Disable Battery Optimization (Recommended)"
+            android:textAllCaps="false"
+            android:textColor="#F1F5F9"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Keep background sync enabled so that Admin (App 1) can access device status even when screen is locked."
+            android:textColor="#64748B"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</ScrollView>

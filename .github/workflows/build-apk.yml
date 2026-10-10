@@ -1,0 +1,50 @@
+name: Build Both APKs (App 1 & App 2)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows manual 1-click trigger from GitHub website
+
+jobs:
+  build-apks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Build App 1 (Admin Controller APK)
+      - name: Build App 1 (Admin) APK
+        working-directory: ./app1_admin
+        run: |
+          gradle wrapper --gradle-version 8.6
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          mkdir -p ../output_apks
+          cp app/build/outputs/apk/debug/app-debug.apk ../output_apks/App1_Admin_Controller.apk
+
+      # Build App 2 (Target Client APK)
+      - name: Build App 2 (Client) APK
+        working-directory: ./app2_client
+        run: |
+          gradle wrapper --gradle-version 8.6
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../output_apks/App2_Target_Client.apk
+
+      # Upload both APK files so user can download them directly
+      - name: Upload APKs as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Device-Sync-APKs
+          path: output_apks/*.apk
+          retention-days: 30
